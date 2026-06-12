@@ -10,6 +10,7 @@ import { verifyJwt, isAdmin, getClientIp } from "../lib/auth";
 import { getCachedCountry, setCachedCountry } from "../lib/cache";
 import { writeAuditLog } from "../lib/audit";
 import type { CountryStatus } from "../types/flags";
+import { requireMachineRead, requireMachineWrite } from "../lib/machine-auth";
 
 const country = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -19,7 +20,7 @@ async function requireAdmin(authHeader: string | undefined, env: Bindings) {
 }
 
 // ── GET /countries — list all country configs ─────────────────────────────────
-country.get("/countries", async (c) => {
+country.get("/countries", requireMachineRead(), async (c) => {
   const db: SupabaseClient = c.get("db");
   const { data, error } = await db
     .from("country_configs")
@@ -55,7 +56,7 @@ country.get("/countries/:code", async (c) => {
 });
 
 // ── POST /countries — configure a country (admin only) ───────────────────────
-country.post("/countries", async (c) => {
+country.post("/countries", requireMachineWrite("country:write"), async (c) => {
   const payload = await requireAdmin(c.req.header("Authorization"), c.env);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
   const db: SupabaseClient = c.get("db");
@@ -97,7 +98,7 @@ country.post("/countries", async (c) => {
 });
 
 // ── PATCH /countries/:code/status — change country status ────────────────────
-country.patch("/countries/:code/status", async (c) => {
+country.patch("/countries/:code/status", requireMachineWrite("country:write"), async (c) => {
   const payload = await requireAdmin(c.req.header("Authorization"), c.env);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
   const code = c.req.param("code").toUpperCase();
