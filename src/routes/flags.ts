@@ -8,11 +8,12 @@ import type { Bindings, Variables } from "../index";
 import { verifyJwt, isAdmin, getClientIp } from "../lib/auth";
 import { getCachedFlag, setCachedFlag, deleteCachedFlag, getAllCachedFlags } from "../lib/cache";
 import { writeAuditLog } from "../lib/audit";
+import type { Context } from "hono";
 import type { FlagState } from "../types/flags";
 
 const flags = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
-async function requireAdmin(c: Parameters<typeof flags.get>[1] extends (c: infer C) => unknown ? C : never) {
+async function requireAdmin(c: Context<{ Bindings: Bindings; Variables: Variables }>) {
   const auth = c.req.header("Authorization");
   if (!auth?.startsWith("Bearer ")) return null;
   return verifyJwt(auth.slice(7), c.env.RALD_JWT_SECRET);
@@ -47,7 +48,7 @@ flags.get("/flags/:name", async (c) => {
 
 // ── POST /flags — create flag (admin only) ────────────────────────────────────
 flags.post("/flags", async (c) => {
-  const payload = await requireAdmin(c as Parameters<typeof flags.get>[1] extends (c: infer C) => unknown ? C : never);
+  const payload = await requireAdmin(c);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
   const db: SupabaseClient = c.get("db");
   const ip = getClientIp(c.req.raw);
@@ -72,7 +73,7 @@ flags.post("/flags", async (c) => {
 
 // ── PATCH /flags/:name — update flag state (admin only) ──────────────────────
 flags.patch("/flags/:name", async (c) => {
-  const payload = await requireAdmin(c as Parameters<typeof flags.get>[1] extends (c: infer C) => unknown ? C : never);
+  const payload = await requireAdmin(c);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
   const name = c.req.param("name");
   const db: SupabaseClient = c.get("db");
@@ -90,7 +91,7 @@ flags.patch("/flags/:name", async (c) => {
 
 // ── DELETE /flags/:name — delete flag (admin only) ────────────────────────────
 flags.delete("/flags/:name", async (c) => {
-  const payload = await requireAdmin(c as Parameters<typeof flags.get>[1] extends (c: infer C) => unknown ? C : never);
+  const payload = await requireAdmin(c);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
   const name = c.req.param("name");
   const db: SupabaseClient = c.get("db");

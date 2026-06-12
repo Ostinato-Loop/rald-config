@@ -35,7 +35,7 @@ killSwitches.get("/kill-switches", async (c) => {
 // Public read — any service can check if a kill switch is active.
 // Uses KV for near-zero latency (5s TTL).
 killSwitches.get("/kill-switches/:target", async (c) => {
-  const target = c.req.param("target");
+  const target = c.req.param("target")!;
   // Require internal secret OR admin token for reads
   const internalSecret = c.req.header("X-Internal-Secret");
   const isInternalCall = internalSecret === c.env.RALD_ADMIN_SECRET;
@@ -55,9 +55,9 @@ killSwitches.post("/kill-switches/:target/activate", requireMachineWrite("kill-s
   const payload = await requireAdmin(c.req.header("Authorization"), c.env);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
   const db: SupabaseClient = c.get("db");
-  const target = c.req.param("target");
+  const target = c.req.param("target")!;
   const ip = getClientIp(c.req.raw);
-  const body = await c.req.json<{ reason?: string; metadata?: Record<string, unknown> }>().catch(() => ({}));
+  const body = await c.req.json<{ reason?: string; metadata?: Record<string, unknown> }>().catch(() => ({} as { reason?: string; metadata?: Record<string, unknown> }));
 
   // Activate in KV immediately (5s propagation to all edge nodes)
   await setKillSwitch(c.env.KILL_SWITCH_KV, target, true);
@@ -98,7 +98,7 @@ killSwitches.post("/kill-switches/:target/deactivate", requireMachineWrite("kill
   const payload = await requireAdmin(c.req.header("Authorization"), c.env);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
   const db: SupabaseClient = c.get("db");
-  const target = c.req.param("target");
+  const target = c.req.param("target")!;
   const ip = getClientIp(c.req.raw);
   const now = new Date().toISOString();
 

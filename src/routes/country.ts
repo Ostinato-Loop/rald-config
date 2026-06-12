@@ -21,7 +21,7 @@ async function requireAdmin(authHeader: string | undefined, env: Bindings) {
 
 // ── GET /countries — list all country configs ─────────────────────────────────
 country.get("/countries", requireMachineRead(), async (c) => {
-  const db: SupabaseClient = c.get("db");
+  const db = c.get("db") as SupabaseClient;
   const { data, error } = await db
     .from("country_configs")
     .select("*")
@@ -33,7 +33,7 @@ country.get("/countries", requireMachineRead(), async (c) => {
 // ── GET /countries/:code — single country status ──────────────────────────────
 // Public read with internal secret for services checking country eligibility.
 country.get("/countries/:code", async (c) => {
-  const code = c.req.param("code").toUpperCase();
+  const code = c.req.param("code")!.toUpperCase();
   const internalSecret = c.req.header("X-Internal-Secret");
   const isInternal = internalSecret === c.env.RALD_ADMIN_SECRET;
   const authHeader = c.req.header("Authorization");
@@ -45,7 +45,7 @@ country.get("/countries/:code", async (c) => {
     return c.json({ country_code: code, status: cached, source: "cache" });
   }
 
-  const db: SupabaseClient = c.get("db");
+  const db = c.get("db") as SupabaseClient;
   const { data } = await db.from("country_configs").select("*").eq("country_code", code).single();
   if (!data) {
     // Unknown country — default to WAITLIST (no automatic activation)
@@ -59,7 +59,7 @@ country.get("/countries/:code", async (c) => {
 country.post("/countries", requireMachineWrite("country:write"), async (c) => {
   const payload = await requireAdmin(c.req.header("Authorization"), c.env);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
-  const db: SupabaseClient = c.get("db");
+  const db = c.get("db") as SupabaseClient;
   const ip = getClientIp(c.req.raw);
   const body = await c.req.json<{
     country_code:       string;
@@ -101,8 +101,8 @@ country.post("/countries", requireMachineWrite("country:write"), async (c) => {
 country.patch("/countries/:code/status", requireMachineWrite("country:write"), async (c) => {
   const payload = await requireAdmin(c.req.header("Authorization"), c.env);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
-  const code = c.req.param("code").toUpperCase();
-  const db: SupabaseClient = c.get("db");
+  const code = c.req.param("code")!.toUpperCase();
+  const db = c.get("db") as SupabaseClient;
   const ip = getClientIp(c.req.raw);
   const body = await c.req.json<{ status: CountryStatus; reason?: string }>().catch(() => null);
   if (!body?.status) return c.json({ error: "status is required" }, 400);
