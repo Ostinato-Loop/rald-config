@@ -9,6 +9,7 @@ import type { Bindings, Variables } from "../index";
 import { verifyJwt, isAdmin, getClientIp } from "../lib/auth";
 import { setKillSwitch, isKillSwitchActive, getAllKillSwitches } from "../lib/cache";
 import { writeAuditLog } from "../lib/audit";
+import { requireMachineRead, requireMachineWrite } from "../lib/machine-auth";
 
 const killSwitches = new Hono<{ Bindings: Bindings; Variables: Variables }>();
 
@@ -50,7 +51,7 @@ killSwitches.get("/kill-switches/:target", async (c) => {
 
 // ── POST /kill-switches/:target/activate — ACTIVATE a kill switch ─────────────
 // Activates within seconds — updates KV immediately (5s TTL propagation).
-killSwitches.post("/kill-switches/:target/activate", async (c) => {
+killSwitches.post("/kill-switches/:target/activate", requireMachineWrite("kill-switch:write"), async (c) => {
   const payload = await requireAdmin(c.req.header("Authorization"), c.env);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
   const db: SupabaseClient = c.get("db");
@@ -93,7 +94,7 @@ killSwitches.post("/kill-switches/:target/activate", async (c) => {
 });
 
 // ── POST /kill-switches/:target/deactivate — DEACTIVATE a kill switch ────────
-killSwitches.post("/kill-switches/:target/deactivate", async (c) => {
+killSwitches.post("/kill-switches/:target/deactivate", requireMachineWrite("kill-switch:write"), async (c) => {
   const payload = await requireAdmin(c.req.header("Authorization"), c.env);
   if (!payload || !isAdmin(payload)) return c.json({ error: "Admin required" }, 403);
   const db: SupabaseClient = c.get("db");
