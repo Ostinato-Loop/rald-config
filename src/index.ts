@@ -14,6 +14,7 @@ import healthRoutes      from "./routes/health";
 import flagsRoutes       from "./routes/flags";
 import killSwitchRoutes  from "./routes/kill-switches";
 import countryRoutes     from "./routes/country";
+import { requestLogger } from "./lib/logger";
 
 export type Bindings = {
   SUPABASE_URL:              string;
@@ -27,6 +28,8 @@ export type Bindings = {
   FLAG_CACHE_KV:             KVNamespace;
   KILL_SWITCH_KV:            KVNamespace;
   COUNTRY_CACHE_KV:          KVNamespace;
+  OPEN_OBSERVE_API_KEY?:     string;  // OpenObserve ingest key (C-CERT-004)
+  OPEN_OBSERVE_ENDPOINT?:    string;  // e.g. https://observe.rald.cloud/api/rald/rald-config/_json
 };
 
 export type Variables = {
@@ -43,6 +46,9 @@ app.use("*", async (c, next) => {
   c.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
   c.header("Referrer-Policy", "no-referrer");
 });
+
+// ── Request logger — OpenObserve log shipping ────────────────────────────────
+app.use("*", requestLogger("rald-config"));
 
 // ── CORS — RALD ecosystem + admin ─────────────────────────────────────────────
 app.use("*", cors({
