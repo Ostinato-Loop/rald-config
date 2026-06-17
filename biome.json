@@ -5,10 +5,31 @@
     "enabled": true,
     "rules": {
       "recommended": true,
-      "suspicious": { "noExplicitAny": "warn" },
-      "style": { "noNonNullAssertion": "warn" }
+      "suspicious": {
+        "noExplicitAny": "warn",
+        "noConsoleLog": "warn"
+      },
+      "style": {
+        "noNonNullAssertion": "warn",
+        "noUnusedTemplateLiteral": "warn",
+        "useTemplate": "warn"
+      },
+      "correctness": {
+        "noUnusedVariables": "warn",
+        "noUnusedImports": "warn",
+        "noUnusedPrivateClassMembers": "warn"
+      },
+      "complexity": {
+        "noForEach": "warn"
+      }
     }
   },
-  "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2 },
-  "files": { "ignore": ["node_modules", "dist", ".wrangler"] }
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2
+  },
+  "files": {
+    "ignore": ["node_modules", "dist", ".wrangler"]
+  }
 }
